@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ramp Expense Approval Policy</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --ink:#1a1d21; --muted:#5b6470;
+    --line:#e2e5ea; --accent:#2b6cb0; --accent-soft:#e8f0fa;
+    --ramp:#f6c453; --mgr:#63b3ed; --te:#9f7aea; --acct:#48bb78;
+    --shadow:0 1px 3px rgba(20,30,50,.08),0 6px 24px rgba(20,30,50,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 64px}
+  header h1{margin:0 0 4px;font-size:26px;letter-spacing:-.01em}
+  header p{margin:0;color:var(--muted);font-size:15px}
+  .grid-top{display:grid;grid-template-columns:1fr;gap:24px;margin-top:28px}
+
+  /* Decision tool */
+  .tool{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:24px;box-shadow:var(--shadow)}
+  .tool h2{margin:0 0 4px;font-size:18px}
+  .tool .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  .controls{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+  @media(max-width:620px){.controls{grid-template-columns:1fr}}
+  label{display:block;font-size:13px;font-weight:600;margin:0 0 6px;color:var(--ink)}
+  select,input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;
+    font-size:15px;background:#fff;color:var(--ink)}
+  select:focus,input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .result{margin-top:22px;border-top:1px dashed var(--line);padding-top:20px;min-height:40px}
+  .tier-pill{display:inline-block;font-size:12px;font-weight:600;color:var(--accent);
+    background:var(--accent-soft);padding:4px 10px;border-radius:999px;margin-bottom:14px}
+  .chain{display:flex;align-items:stretch;flex-wrap:wrap;gap:0}
+  .step{display:flex;align-items:center}
+  .node{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    min-width:120px;padding:12px 14px;border-radius:12px;color:#1a1d21;font-weight:600;
+    text-align:center;font-size:14px;box-shadow:var(--shadow)}
+  .node small{font-weight:500;font-size:11px;opacity:.8;margin-top:2px}
+  .arrow{width:30px;height:2px;background:var(--muted);position:relative;margin:0 2px}
+  .arrow::after{content:"";position:absolute;right:-1px;top:-4px;border-left:7px solid var(--muted);
+    border-top:5px solid transparent;border-bottom:5px solid transparent}
+  .n-ramp{background:var(--ramp)} .n-mgr{background:var(--mgr)}
+  .n-te{background:var(--te);color:#fff} .n-acct{background:var(--acct);color:#fff}
+  .note-box{margin-top:16px;font-size:13px;color:var(--muted);background:#fff8e8;
+    border:1px solid #f0e0b8;border-radius:10px;padding:10px 14px}
+  .placeholder{color:var(--muted);font-size:14px}
+
+  /* Flowchart matrix */
+  .chart{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:24px;box-shadow:var(--shadow);margin-top:28px}
+  .chart h2{margin:0 0 4px;font-size:18px}
+  .chart .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
+  .cat-block{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:18px}
+  .cat-head{display:flex;align-items:center;justify-content:space-between;
+    padding:14px 18px;background:#f0f3f7;cursor:pointer;user-select:none}
+  .cat-head h3{margin:0;font-size:15px}
+  .cat-head .tag{font-size:12px;color:var(--muted)}
+  .cat-head .chev{transition:transform .2s;color:var(--muted);font-size:13px}
+  .cat-block.open .chev{transform:rotate(90deg)}
+  .cat-body{display:none;padding:6px 18px 18px}
+  .cat-block.open .cat-body{display:block}
+  .row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .row:last-child{border-bottom:none}
+  .thr{min-width:120px;font-weight:600;font-size:14px}
+  .row .chain{flex:1}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin:4px 0 22px;font-size:13px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .dot{width:13px;height:13px;border-radius:4px;display:inline-block}
+  .ai-note{font-size:13px;color:var(--muted);margin-top:8px;display:flex;gap:8px;align-items:flex-start}
+  .ai-note b{color:var(--ink)}
+  footer{margin-top:30px;font-size:12px;color:var(--muted);text-align:center}
+  .mini-node{font-size:13px;min-width:96px;padding:9px 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Ramp Expense Approval Policy</h1>
+    <p>Interactive approval flow — pick a category and enter an amount to see who needs to sign off.</p>
+  </header>
+
+  <div class="grid-top">
+    <!-- DECISION TOOL -->
+    <section class="tool">
+      <h2>Approval Lookup</h2>
+      <p class="sub">Enter the spend details to see the required approval chain.</p>
+      <div class="controls">
+        <div>
+          <label for="cat">Spend category</label>
+          <select id="cat">
+            <option value="">Select a category…</option>
+            <option value="airline">Travel — Airline spend</option>
+            <option value="nonair">Travel — Non-airline travel</option>
+            <option value="software">Non-travel — Software</option>
+            <option value="opex">Non-travel — Opex cards</option>
+            <option value="other">Non-travel — All other spend</option>
+          </select>
+        </div>
+        <div>
+          <label for="amt">Amount (USD)</label>
+          <input type="number" id="amt" min="0" step="100" placeholder="e.g. 4500">
+        </div>
+      </div>
+      <div class="result" id="result">
+        <span class="placeholder">Your approval chain will appear here.</span>
+      </div>
+    </section>
+  </div>
+
+  <!-- FULL FLOWCHART -->
+  <section class="chart">
+    <h2>Full Approval Flowchart</h2>
+    <p class="sub">Every category and threshold. Click a category to expand or collapse.</p>
+    <div class="legend">
+      <span><i class="dot" style="background:var(--ramp)"></i> Ramp AI</span>
+      <span><i class="dot" style="background:var(--mgr)"></i> Manager</span>
+      <span><i class="dot" style="background:var(--te)"></i> T&amp;E Specialist</span>
+      <span><i class="dot" style="background:var(--acct)"></i> Accounting Approver</span>
+    </div>
+    <div id="charts"></div>
+    <div class="ai-note">
+      <span>ℹ️</span>
+      <div><b>Always-on safeguard:</b> Ramp AI will escalate to a manager whenever it is unsure of an
+      expense or determines that human review is needed — regardless of amount.</div>
+    </div>
+  </section>
+
+  <footer>Generated for internal review · Ramp expense platform rollout</footer>
+</div>
+
+<script>
+const ROLES = {
+  ramp:{label:"Ramp AI", cls:"n-ramp", sub:"Automated"},
+  mgr:{label:"Manager", cls:"n-mgr", sub:"Direct manager"},
+  te:{label:"T&E Specialist", cls:"n-te", sub:"Travel & Expense"},
+  acct:{label:"Accounting Approver", cls:"n-acct", sub:"Accounting"}
+};
+
+// Policy model: each category has ordered tiers with an upper bound (exclusive) and the approver chain.
+const POLICY = {
+  airline:{name:"Travel — Airline spend", tiers:[
+    {max:10000, label:"Below $10K", chain:["ramp"]},
+    {max:15000, label:"$10K – $15K", chain:["ramp","mgr"]},
+    {max:20000, label:"$15K – $20K", chain:["ramp","mgr","te"]},
+    {max:Infinity, label:"Over $20K", chain:["ramp","mgr","te","acct"]}
+  ]},
+  nonair:{name:"Travel — Non-airline travel", tiers:[
+    {max:1000, label:"Under $1K", chain:["ramp"]},
+    {max:5000, label:"$1K – $5K", chain:["ramp","mgr"]},
+    {max:10000, label:"$5K – $10K", chain:["ramp","mgr","te"]},
+    {max:Infinity, label:"Over $10K", chain:["ramp","mgr","te","acct"]}
+  ]},
+  software:{name:"Non-travel — Software", tiers:[
+    {max:1000, label:"$0 – $1K", chain:["ramp","mgr"]},
+    {max:5000, label:"$1K – $5K", chain:["ramp","mgr","te"]},
+    {max:Infinity, label:"Over $5K", chain:["ramp","mgr","te","acct"]}
+  ]},
+  opex:{name:"Non-travel — Opex cards", tiers:[
+    {max:10000, label:"$0 – $10K", chain:["ramp","mgr"]},
+    {max:25000, label:"$10K – $25K", chain:["ramp","mgr","te"]},
+    {max:Infinity, label:"Over $25K", chain:["ramp","mgr","te","acct"]}
+  ]},
+  other:{name:"Non-travel — All other spend", tiers:[
+    {max:1000, label:"$0 – $1K", chain:["ramp"]},
+    {max:5000, label:"$1K – $5K", chain:["ramp","mgr"]},
+    {max:10000, label:"$5K – $10K", chain:["ramp","mgr","te"]},
+    {max:Infinity, label:"Over $10K", chain:["ramp","mgr","te","acct"]}
+  ]}
+};
+
+function findTier(cat, amount){
+  const tiers = POLICY[cat].tiers;
+  for(const t of tiers){ if(amount < t.max) return t; }
+  return tiers[tiers.length-1];
+}
+
+function chainHTML(chain, mini){
+  let html = '<div class="chain">';
+  chain.forEach((r,i)=>{
+    const role = ROLES[r];
+    html += '<div class="step">';
+    html += `<div class="node ${role.cls} ${mini?'mini-node':''}">${role.label}`+
+            (mini?'':`<small>${role.sub}</small>`)+`</div>`;
+    if(i < chain.length-1) html += '<div class="arrow"></div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function render(){
+  const cat = document.getElementById('cat').value;
+  const amtRaw = document.getElementById('amt').value;
+  const out = document.getElementById('result');
+  if(!cat || amtRaw === ''){
+    out.innerHTML = '<span class="placeholder">Your approval chain will appear here.</span>';
+    return;
+  }
+  const amt = parseFloat(amtRaw);
+  if(isNaN(amt) || amt < 0){
+    out.innerHTML = '<span class="placeholder">Enter a valid amount.</span>';
+    return;
+  }
+  const tier = findTier(cat, amt);
+  const count = tier.chain.length;
+  let html = `<div class="tier-pill">${POLICY[cat].name} · ${tier.label} · `+
+             `${count} approver${count>1?'s':''}</div>`;
+  html += chainHTML(tier.chain, false);
+  html += '<div class="note-box">Ramp AI may still escalate to a manager if it is unsure of the '+
+          'expense or flags it for human review, even within this tier.</div>';
+  out.innerHTML = html;
+}
+
+document.getElementById('cat').addEventListener('change', render);
+document.getElementById('amt').addEventListener('input', render);
+
+// Build full flowchart
+const charts = document.getElementById('charts');
+Object.keys(POLICY).forEach((key, idx)=>{
+  const c = POLICY[key];
+  const block = document.createElement('div');
+  block.className = 'cat-block' + (idx===0?' open':'');
+  let rows = '';
+  c.tiers.forEach(t=>{
+    rows += `<div class="row"><div class="thr">${t.label}</div>${chainHTML(t.chain, true)}</div>`;
+  });
+  block.innerHTML =
+    `<div class="cat-head"><h3>${c.name}</h3>`+
+    `<span class="tag">${c.tiers.length} tiers <span class="chev">▶</span></span></div>`+
+    `<div class="cat-body">${rows}</div>`;
+  block.querySelector('.cat-head').addEventListener('click', ()=>block.classList.toggle('open'));
+  charts.appendChild(block);
+});
+</script>
+</body>
+</html>
