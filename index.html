@@ -113,7 +113,6 @@
       <span><span class="sw" style="background:#888780"></span>Ramp / operational</span>
       <span><span class="sw" style="background:#1d9e75"></span>Workday / accounting</span>
       <span><span class="sw" style="background:#ef9f27"></span>Exception path</span>
-      <span><span class="sw" style="border:1.5px dashed #5f5e5a;background:transparent"></span>To build</span>
     </div>
   </header>
 
@@ -140,9 +139,9 @@
           <text class="t" x="300" y="44" text-anchor="middle">1 · Sign in</text>
           <text class="s" x="300" y="62" text-anchor="middle">Okta SSO + Workday HRIS (SFTP)</text></g>
 
-        <g class="node dash" onclick="pick('req')"><rect x="160" y="116" width="280" height="56" rx="8"/>
+        <g class="node gray" onclick="pick('req')"><rect x="160" y="116" width="280" height="56" rx="8"/>
           <text class="t" x="300" y="140" text-anchor="middle">2 · Request a card</text>
-          <text class="s" x="300" y="158" text-anchor="middle">Approval workflow — to build</text></g>
+          <text class="s" x="300" y="158" text-anchor="middle">Request cards for spend programs</text></g>
 
         <g class="node gray" onclick="pick('spend')"><rect x="160" y="212" width="280" height="56" rx="8"/>
           <text class="t" x="300" y="236" text-anchor="middle">3 · Spend on the card</text>
@@ -226,8 +225,8 @@ const data={
     what:"Employees authenticate to Ramp via Okta SSO (SAML). Identity, department, and manager flow from Workday HRIS over a scheduled SFTP worker feed, keeping Ramp's directory and approval routing in sync with HR.",
     steps:["Okta SAML login","Workday HRIS worker file via SFTP","User provisioned in Ramp"],
     pending:[{task:"SFTP build and test",owner:"Andrew Yoblonski"}]},
- req:{n:"Step 2 · Access",t:"Request a card",sys:["Ramp"],todo:true,
-    what:"The user requests a virtual or physical card with purpose, limit, and default coding. It routes through an approval workflow; on approval Ramp issues the card with limits and coding attached.",
+ req:{n:"Step 2 · Access",t:"Request a card",sys:["Ramp"],
+    what:"Users request cards for spend programs, with purpose, limit, and default coding. The request routes through an approval workflow; on approval Ramp issues the card with limits and coding attached.",
     steps:["Request: purpose, limit, coding","Approval workflow (to build)","Card issued with controls"],
     pending:[{task:"Card-request approval workflow — approvers, thresholds, auto-approve vs. sign-off",owner:"T&E"},
              {task:"Spend programs — multiple programs & auto GL mapping if applicable",owner:"T&E / Accounting / Strat Fin"}]},
