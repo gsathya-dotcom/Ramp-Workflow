@@ -1,277 +1,318 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ramp Expense Approval Policy</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ramp: end-to-end expense payment flow</title>
 <style>
   :root{
-    --bg:#f5f6f8; --card:#ffffff; --ink:#1a1d21; --muted:#5b6470;
-    --line:#e2e5ea; --accent:#2b6cb0; --accent-soft:#e8f0fa;
-    --ramp:#f6c453; --mgr:#63b3ed; --te:#9f7aea; --acct:#48bb78;
-    --comp:#ed8936; --tea:#d53f8c; --hr:#38b2ac; --audit:#718096;
-    --shadow:0 1px 3px rgba(20,30,50,.08),0 6px 24px rgba(20,30,50,.06);
+    --bg:#ffffff; --panel:#ffffff; --ink:#22272e; --muted:#5f5e5a; --hint:#8a8980;
+    --navy:#1e2761; --line:#e5e3dc; --line2:#cfccc2; --tint:#f4f2ec;
+    --gray-fill:#f1efe8; --gray-stroke:#b4b2a9; --gray-ink:#2c2c2a;
+    --teal-fill:#e1f5ee; --teal-stroke:#5dcaa5; --teal-ink:#085041;
+    --amber-fill:#faeeda; --amber-stroke:#ef9f27; --amber-ink:#633806;
+    --info-bg:#e6f1fb; --info-ink:#0c447c;
+    --warn-bg:#faeeda; --warn-ink:#633806;
+    --sel:#185fa5; --arrow:#888780;
+    --maxw:1200px;
   }
   *{box-sizing:border-box}
-  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:var(--bg);color:var(--ink);line-height:1.5}
-  .wrap{max-width:1080px;margin:0 auto;padding:32px 24px 64px}
-  header h1{margin:0 0 4px;font-size:26px;letter-spacing:-.01em}
-  header p{margin:0;color:var(--muted);font-size:15px}
-  .updated{display:inline-block;margin-top:8px;font-size:12px;color:var(--accent);
-    background:var(--accent-soft);padding:3px 10px;border-radius:999px}
-  .grid-top{display:grid;grid-template-columns:1fr;gap:24px;margin-top:24px}
-
-  .tool{background:var(--card);border:1px solid var(--line);border-radius:16px;
-    padding:24px;box-shadow:var(--shadow)}
-  .tool h2{margin:0 0 4px;font-size:18px}
-  .tool .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
-  .controls{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
-  @media(max-width:620px){.controls{grid-template-columns:1fr}}
-  label{display:block;font-size:13px;font-weight:600;margin:0 0 6px;color:var(--ink)}
-  select,input{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;
-    font-size:15px;background:#fff;color:var(--ink)}
-  select:focus,input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-  .result{margin-top:22px;border-top:1px dashed var(--line);padding-top:20px;min-height:40px}
-  .tier-pill{display:inline-block;font-size:12px;font-weight:600;color:var(--accent);
-    background:var(--accent-soft);padding:4px 10px;border-radius:999px;margin-bottom:14px}
-  .chain{display:flex;align-items:stretch;flex-wrap:wrap;gap:6px 0}
-  .step{display:flex;align-items:center}
-  .node{display:flex;flex-direction:column;align-items:center;justify-content:center;
-    min-width:118px;padding:12px 14px;border-radius:12px;color:#1a1d21;font-weight:600;
-    text-align:center;font-size:14px;box-shadow:var(--shadow)}
-  .node small{font-weight:500;font-size:11px;opacity:.8;margin-top:2px}
-  .arrow{width:26px;height:2px;background:var(--muted);position:relative;margin:0 2px}
-  .arrow::after{content:"";position:absolute;right:-1px;top:-4px;border-left:7px solid var(--muted);
-    border-top:5px solid transparent;border-bottom:5px solid transparent}
-  .n-ramp{background:var(--ramp)} .n-mgr{background:var(--mgr)}
-  .n-te{background:var(--te);color:#fff} .n-acct{background:var(--acct);color:#fff}
-  .n-comp{background:var(--comp);color:#fff} .n-tea{background:var(--tea);color:#fff}
-  .n-hr{background:var(--hr);color:#fff} .n-audit{background:var(--audit);color:#fff}
-  .note-box{margin-top:16px;font-size:13px;color:var(--muted);background:#fff8e8;
-    border:1px solid #f0e0b8;border-radius:10px;padding:10px 14px}
-  .placeholder{color:var(--muted);font-size:14px}
-
-  .chart{background:var(--card);border:1px solid var(--line);border-radius:16px;
-    padding:24px;box-shadow:var(--shadow);margin-top:28px}
-  .chart h2{margin:0 0 4px;font-size:18px}
-  .chart .sub{color:var(--muted);font-size:13px;margin:0 0 20px}
-  .cat-block{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:18px}
-  .cat-head{display:flex;align-items:center;justify-content:space-between;
-    padding:14px 18px;background:#f0f3f7;cursor:pointer;user-select:none}
-  .cat-head h3{margin:0;font-size:15px}
-  .cat-head .tag{font-size:12px;color:var(--muted)}
-  .cat-head .chev{transition:transform .2s;color:var(--muted);font-size:13px}
-  .cat-block.open .chev{transform:rotate(90deg)}
-  .cat-body{display:none;padding:6px 18px 18px}
-  .cat-block.open .cat-body{display:block}
-  .row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
-  .row:last-child{border-bottom:none}
-  .thr{min-width:120px;font-weight:600;font-size:14px}
-  .row .chain{flex:1}
-  .legend{display:flex;gap:14px 18px;flex-wrap:wrap;margin:4px 0 22px;font-size:13px;color:var(--muted)}
-  .legend span{display:inline-flex;align-items:center;gap:7px}
-  .dot{width:13px;height:13px;border-radius:4px;display:inline-block}
-  .ai-note{font-size:13px;color:var(--muted);margin-top:8px;display:flex;gap:8px;align-items:flex-start}
-  .ai-note b{color:var(--ink)}
-  .audit-card{background:#f0f3f7;border:1px solid var(--line);border-radius:14px;padding:18px;margin-top:6px}
-  .audit-card h3{margin:0 0 6px;font-size:15px}
-  .audit-card p{margin:0 0 12px;font-size:13px;color:var(--muted)}
-  .mini-node{font-size:13px;min-width:96px;padding:9px 10px}
-  footer{margin-top:30px;font-size:12px;color:var(--muted);text-align:center}
+  html,body{margin:0;padding:0;background:#f7f6f2;color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:24px 20px 48px}
+  .topnav{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+  .topnav .brand{font-weight:600;font-size:14px;color:var(--muted)}
+  .topnav .navlinks{display:flex;gap:8px}
+  .topnav a{text-decoration:none;font-size:14px;color:var(--ink);padding:7px 14px;
+    border-radius:8px;border:1px solid transparent}
+  .topnav a:hover{background:var(--tint)}
+  .topnav a.active{background:var(--navy);color:#fff}
+  header.top{margin-bottom:20px}
+  header.top h1{font-size:24px;font-weight:600;margin:0 0 4px}
+  header.top p{margin:0;color:var(--muted);font-size:15px}
+  .legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;font-size:12px;color:var(--muted)}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .sw{width:13px;height:13px;border-radius:3px;display:inline-block}
+  .layout{display:grid;grid-template-columns:minmax(320px,460px) 1fr;gap:28px;align-items:start}
+  .flowwrap{position:sticky;top:16px;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:14px}
+  .flowwrap svg{width:100%;height:auto;display:block}
+  .detail{min-height:200px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px}
+  .card h2{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--hint);margin:0 0 2px}
+  .card h3{font-size:22px;font-weight:600;margin:0 0 14px}
+  .card p.lead{font-size:16px;margin:0 0 16px}
+  .callout{border-radius:10px;padding:12px 14px;font-size:14px;margin:0 0 16px}
+  .callout.info{background:var(--info-bg);color:var(--info-ink)}
+  .callout.warn{background:var(--warn-bg);color:var(--warn-ink)}
+  .links{margin:0 0 16px;display:flex;flex-direction:column;gap:8px}
+  .btnlink{display:inline-block;width:fit-content;text-decoration:none;border:1px solid var(--line2);
+    border-radius:10px;padding:8px 14px;font-size:14px;color:var(--info-ink);
+    background:#fbfaf7;font-weight:500}
+  .btnlink:hover{background:#f1efe8}
+  .steplbl{font-size:13px;font-weight:600;margin:0 0 6px}
+  ol.steps{margin:0 0 16px;padding-left:20px;font-size:15px}
+  ol.steps li{margin-bottom:7px}
+  p.inlinesteps{font-size:14px;color:var(--muted);margin:0 0 16px}
+  p.inlinesteps b{color:var(--ink)}
+  .syswrap{border-top:1px solid var(--line);padding-top:14px;margin-top:6px}
+  .syswrap .lbl{font-size:12px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+  .chip{display:inline-block;background:#f4f2ec;border:1px solid var(--line);border-radius:8px;
+    padding:4px 10px;font-size:13px;color:var(--ink);margin:0 6px 6px 0}
+  .pending{margin-top:18px;border:1px solid var(--line);background:var(--tint);border-radius:12px;padding:14px 16px}
+  .pending h4{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--navy);margin:0 0 10px;font-weight:600}
+  .pending ul{margin:0;padding-left:18px}
+  .pending li{margin-bottom:8px;font-size:14px}
+  .pending li:last-child{margin-bottom:0}
+  .pending .owner{color:var(--hint);font-style:italic}
+  table.policy{width:100%;border-collapse:collapse;font-size:12.5px;margin:4px 0 4px}
+  table.policy th{text-align:left;padding:7px 8px;color:var(--muted);font-weight:600;
+    border-bottom:1px solid var(--line2)}
+  table.policy td{padding:7px 8px;vertical-align:top}
+  table.policy td.cat{font-weight:600}
+  .ptitle{font-size:13px;font-weight:600;margin:6px 0 8px}
+  footer{margin-top:28px;color:var(--hint);font-size:12px}
+  .node{cursor:pointer}
+  .node rect{stroke-width:.8;transition:filter .12s}
+  .node:hover rect{filter:brightness(.97)}
+  .node.gray rect{fill:var(--gray-fill);stroke:var(--gray-stroke)}
+  .node.teal rect{fill:var(--teal-fill);stroke:var(--teal-stroke)}
+  .node.amber rect{fill:var(--amber-fill);stroke:var(--amber-stroke)}
+  .node.dash rect{fill:var(--gray-fill);stroke:#5f5e5a;stroke-dasharray:5 3;stroke-width:1.2}
+  .node.gray text{fill:var(--gray-ink)}
+  .node.teal text{fill:var(--teal-ink)}
+  .node.amber text{fill:var(--amber-ink)}
+  text.t{font-size:14px;font-weight:600}
+  text.s{font-size:12px;opacity:.82}
+  .flbl{font-size:12px;fill:var(--muted)}
+  .arrow{stroke:var(--arrow);stroke-width:1.5;fill:none}
+  #sel{fill:none;stroke:var(--sel);stroke-width:2}
+  @media (max-width:820px){
+    .layout{grid-template-columns:1fr}
+    .flowwrap{position:static}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>Ramp Expense Approval Policy</h1>
-    <p>Interactive approval flow — pick a category and enter an amount to see who needs to sign off.</p>
-    <span class="updated">Updated policy · includes Charitable, Immigration/Visa &amp; Quarterly Audit</span>
+  <nav class="topnav">
+    <span class="brand">Ramp expense platform</span>
+    <div class="navlinks">
+      <a href="index.html" class="active">End-to-end flow</a>
+      <a href="approval-flow.html">Approval policy</a>
+      <a href="https://docs.google.com/spreadsheets/d/1uAa8eFCFHKJFngiGFoIt6qoU9iRl0b7KGfDBZKwlF9k/edit?gid=291132758#gid=291132758" target="_blank" rel="noopener">Project plan ↗</a>
+    </div>
+  </nav>
+  <header class="top">
+    <h1>Ramp: end-to-end expense payment flow</h1>
+    <p>From sign-in and card request through spend, review, sync, payment, and posted journal entries. Click any box to see the detail and the pending build / design activities.</p>
+    <div class="legend">
+      <span><span class="sw" style="background:#888780"></span>Ramp / operational</span>
+      <span><span class="sw" style="background:#1d9e75"></span>Workday / accounting</span>
+      <span><span class="sw" style="background:#ef9f27"></span>Exception path</span>
+      <span><span class="sw" style="border:1.5px dashed #5f5e5a;background:transparent"></span>To build</span>
+    </div>
   </header>
 
-  <div class="grid-top">
-    <section class="tool">
-      <h2>Approval Lookup</h2>
-      <p class="sub">Enter the spend details to see the required approval chain.</p>
-      <div class="controls">
-        <div>
-          <label for="cat">Spend category</label>
-          <select id="cat">
-            <option value="">Select a category…</option>
-            <option value="airline">Travel — Airline spend</option>
-            <option value="nonair">Travel — Non-airline travel</option>
-            <option value="software">Non-travel — Software</option>
-            <option value="opex">Non-travel — Opex cards</option>
-            <option value="other">Non-travel — All other spend</option>
-            <option value="charity">Non-travel — Charitable contributions</option>
-            <option value="immigration">Non-travel — Immigration / Visa</option>
-          </select>
-        </div>
-        <div>
-          <label for="amt">Amount (USD)</label>
-          <input type="number" id="amt" min="0" step="100" placeholder="e.g. 4500">
-        </div>
-      </div>
-      <div class="result" id="result">
-        <span class="placeholder">Your approval chain will appear here.</span>
-      </div>
-    </section>
+  <div class="layout">
+    <div class="flowwrap">
+      <svg viewBox="0 0 680 768" role="img" aria-label="Ramp to Workday payment flowchart" xmlns="http://www.w3.org/2000/svg">
+        <defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="#888780" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+
+        <line class="arrow" x1="300" y1="76"  x2="300" y2="116" marker-end="url(#arrow)"/>
+        <line class="arrow" x1="300" y1="172" x2="300" y2="212" marker-end="url(#arrow)"/>
+        <line class="arrow" x1="300" y1="268" x2="300" y2="308" marker-end="url(#arrow)"/>
+        <line class="arrow" x1="300" y1="364" x2="300" y2="404" marker-end="url(#arrow)"/>
+        <line class="arrow" x1="300" y1="460" x2="300" y2="500" marker-end="url(#arrow)"/>
+        <line class="arrow" x1="300" y1="556" x2="300" y2="596" marker-end="url(#arrow)"/>
+        <line class="arrow" x1="300" y1="652" x2="300" y2="692" marker-end="url(#arrow)"/>
+        <path class="arrow" d="M440 432 H458 V404 H478" marker-end="url(#arrow)"/>
+        <path class="arrow" d="M440 432 H458 V476 H478" marker-end="url(#arrow)"/>
+        <path class="arrow" d="M564 504 V524 H444" marker-end="url(#arrow)"/>
+
+        <rect id="sel" x="157" y="17" width="286" height="62" rx="8"/>
+
+        <g class="node gray" onclick="pick('sign')"><rect x="160" y="20" width="280" height="56" rx="8"/>
+          <text class="t" x="300" y="44" text-anchor="middle">1 · Sign in</text>
+          <text class="s" x="300" y="62" text-anchor="middle">Okta SSO + Workday HRIS (SFTP)</text></g>
+
+        <g class="node dash" onclick="pick('req')"><rect x="160" y="116" width="280" height="56" rx="8"/>
+          <text class="t" x="300" y="140" text-anchor="middle">2 · Request a card</text>
+          <text class="s" x="300" y="158" text-anchor="middle">Approval workflow — to build</text></g>
+
+        <g class="node gray" onclick="pick('spend')"><rect x="160" y="212" width="280" height="56" rx="8"/>
+          <text class="t" x="300" y="236" text-anchor="middle">3 · Spend on the card</text>
+          <text class="s" x="300" y="254" text-anchor="middle">Purchase authorized in real time</text></g>
+
+        <g class="node gray" onclick="pick('txn')"><rect x="160" y="308" width="280" height="56" rx="8"/>
+          <text class="t" x="300" y="332" text-anchor="middle">4 · Transaction hits Ramp</text>
+          <text class="s" x="300" y="350" text-anchor="middle">Posts, coded, policy-validated</text></g>
+
+        <g class="node gray" onclick="pick('review')"><rect x="160" y="404" width="280" height="56" rx="8"/>
+          <text class="t" x="300" y="428" text-anchor="middle">5 · Review &amp; approve</text>
+          <text class="s" x="300" y="446" text-anchor="middle">Ramp AI screens every item</text></g>
+
+        <text class="flbl" x="564" y="366" text-anchor="middle">Flagged in review</text>
+
+        <g class="node amber" onclick="pick('pers')"><rect x="478" y="376" width="172" height="56" rx="8"/>
+          <text class="t" x="564" y="400" text-anchor="middle">Personal expense</text>
+          <text class="s" x="564" y="418" text-anchor="middle">Employee repays Ramp</text></g>
+
+        <g class="node amber" onclick="pick('disp')"><rect x="478" y="448" width="172" height="56" rx="8"/>
+          <text class="t" x="564" y="472" text-anchor="middle">Dispute</text>
+          <text class="s" x="564" y="490" text-anchor="middle">Chargeback path</text></g>
+
+        <g class="node teal" onclick="pick('sync')"><rect x="160" y="500" width="280" height="56" rx="8"/>
+          <text class="t" x="300" y="524" text-anchor="middle">6 · Sync to Workday</text>
+          <text class="s" x="300" y="542" text-anchor="middle">Validate, cutoff check, post entries</text></g>
+
+        <g class="node gray" onclick="pick('pay')"><rect x="160" y="596" width="280" height="56" rx="8"/>
+          <text class="t" x="300" y="620" text-anchor="middle">7 · Company pays Ramp</text>
+          <text class="s" x="300" y="638" text-anchor="middle">ACH pull from corporate bank</text></g>
+
+        <g class="node teal" onclick="pick('fin')"><rect x="160" y="692" width="280" height="56" rx="8"/>
+          <text class="t" x="300" y="716" text-anchor="middle">8 · Finalize &amp; reconcile</text>
+          <text class="s" x="300" y="734" text-anchor="middle">Lock coding, reconcile clearing</text></g>
+      </svg>
+    </div>
+
+    <div class="detail" id="detail"></div>
   </div>
 
-  <section class="chart">
-    <h2>Full Approval Flowchart</h2>
-    <p class="sub">Every category and threshold. Click a category to expand or collapse.</p>
-    <div class="legend">
-      <span><i class="dot" style="background:var(--ramp)"></i> Ramp AI</span>
-      <span><i class="dot" style="background:var(--mgr)"></i> Manager</span>
-      <span><i class="dot" style="background:var(--te)"></i> T&amp;E Specialist</span>
-      <span><i class="dot" style="background:var(--acct)"></i> Accounting Approver</span>
-      <span><i class="dot" style="background:var(--comp)"></i> Compliance</span>
-      <span><i class="dot" style="background:var(--tea)"></i> T&amp;E Admin</span>
-      <span><i class="dot" style="background:var(--hr)"></i> HR Immigration</span>
-      <span><i class="dot" style="background:var(--audit)"></i> Internal Audit</span>
-    </div>
-    <div id="charts"></div>
-
-    <div class="audit-card">
-      <h3>Quarterly Audit Review — all spend</h3>
-      <p>Each quarter, T&amp;E runs a post-transaction audit of a random sample (~50–100 lines) of
-      <b>approved transactions above $100 that were not reviewed by T&amp;E or Accounting</b>,
-      across all categories — verifying policy compliance, receipt retention, accounting accuracy,
-      and business justification.</p>
-      <div id="auditChain"></div>
-    </div>
-
-    <div class="ai-note">
-      <span>ℹ️</span>
-      <div><b>Always-on safeguard:</b> Ramp AI will escalate to a manager whenever it is unsure of an
-      expense or determines that human review is needed — regardless of amount.</div>
-    </div>
-  </section>
-
-  <footer>Generated for internal review · Ramp expense platform rollout</footer>
+  <footer>Proposed design — Ramp expense platform implementation. Diagram is illustrative of the target-state flow.</footer>
 </div>
 
 <script>
-const ROLES = {
-  ramp:{label:"Ramp AI", cls:"n-ramp", sub:"Automated"},
-  mgr:{label:"Manager", cls:"n-mgr", sub:"Direct manager"},
-  te:{label:"T&E Specialist", cls:"n-te", sub:"Travel & Expense"},
-  acct:{label:"Accounting Approver", cls:"n-acct", sub:"Accounting"},
-  comp:{label:"Compliance", cls:"n-comp", sub:"Compliance"},
-  tea:{label:"T&E Admin", cls:"n-tea", sub:"Travel & Expense"},
-  hr:{label:"HR Immigration", cls:"n-hr", sub:"HR"},
-  audit:{label:"Internal Audit", cls:"n-audit", sub:"Audit"}
+const POLICY_URL="https://docs.google.com/spreadsheets/d/12x7jxbcg2FdB63r17QKCuMKq-SM2Pf0ekilwbaDI36o/edit?gid=0#gid=0";
+const ACCT_URL="https://docs.google.com/document/d/1c7BjLtCM1qL6IDYRhwiRN8GHDgqgwL4ddd4msCnK3zU/edit";
+const pos={
+ sign:{x:160,y:20,w:280},req:{x:160,y:116,w:280},spend:{x:160,y:212,w:280},
+ txn:{x:160,y:308,w:280},review:{x:160,y:404,w:280},pers:{x:478,y:376,w:172},
+ disp:{x:478,y:448,w:172},sync:{x:160,y:500,w:280},pay:{x:160,y:596,w:280},fin:{x:160,y:692,w:280}
+};
+const policy=[
+ {c:"Travel · Airline",t:"< $5K",a:"Ramp AI"},
+ {c:"Travel · Airline",t:"$5K–$10K",a:"Ramp AI → Manager"},
+ {c:"Travel · Airline",t:"$10K–$15K",a:"Ramp AI → Manager → T&E"},
+ {c:"Travel · Airline",t:"> $15K",a:"Ramp AI → Manager → T&E → Accounting"},
+ {c:"Travel · Non-airline",t:"< $1K",a:"Ramp AI"},
+ {c:"Travel · Non-airline",t:"$1K–$5K",a:"Ramp AI → Manager"},
+ {c:"Travel · Non-airline",t:"$5K–$10K",a:"Ramp AI → Manager → T&E"},
+ {c:"Travel · Non-airline",t:"> $10K",a:"Ramp AI → Manager → T&E → Accounting"},
+ {c:"Non-travel · Software",t:"$0–$1K",a:"Ramp AI → Manager"},
+ {c:"Non-travel · Software",t:"$1K–$5K",a:"Ramp AI → Manager → T&E"},
+ {c:"Non-travel · Software",t:"> $5K",a:"Ramp AI → Manager → T&E → Accounting"},
+ {c:"Non-travel · Opex cards",t:"$0–$10K",a:"Ramp AI → Manager"},
+ {c:"Non-travel · Opex cards",t:"$10K–$25K",a:"Ramp AI → Manager → T&E"},
+ {c:"Non-travel · Opex cards",t:"> $25K",a:"Ramp AI → Manager → T&E → Accounting"},
+ {c:"Non-travel · All other",t:"$0–$1K",a:"Ramp AI"},
+ {c:"Non-travel · All other",t:"$1K–$5K",a:"Ramp AI → Manager"},
+ {c:"Non-travel · All other",t:"$5K–$10K",a:"Ramp AI → Manager → T&E"},
+ {c:"Non-travel · All other",t:"> $10K",a:"Ramp AI → Manager → T&E → Accounting"},
+ {c:"Non-travel · Charitable",t:"$500–$5K",a:"Ramp AI → Manager → Compliance"},
+ {c:"Non-travel · Charitable",t:"$5K–$10K",a:"Ramp AI → Manager → Compliance → T&E Admin"},
+ {c:"Non-travel · Charitable",t:"> $10K",a:"Ramp AI → Manager → Compliance → T&E Admin → Accounting"},
+ {c:"Non-travel · Immigration/Visa",t:"$500–$5K",a:"Ramp AI → Manager → HR Immigration"},
+ {c:"Non-travel · Immigration/Visa",t:"$5K–$10K",a:"Ramp AI → Manager → HR Immigration → T&E Admin"},
+ {c:"Non-travel · Immigration/Visa",t:"> $10K",a:"Ramp AI → Manager → HR Immigration → T&E Admin → Accounting"},
+ {c:"All spend · Quarterly audit",t:"50/qtr sample, > $100",a:"Items that bypassed T&E/Accounting → T&E → Accounting → Internal Audit"}
+];
+const data={
+ sign:{n:"Step 1 · Access",t:"Sign in",sys:["Ramp","Okta","Workday HRIS"],
+    what:"Employees authenticate to Ramp via Okta SSO (SAML). Identity, department, and manager flow from Workday HRIS over a scheduled SFTP worker feed, keeping Ramp's directory and approval routing in sync with HR.",
+    steps:["Okta SAML login","Workday HRIS worker file via SFTP","User provisioned in Ramp"],
+    pending:[{task:"SFTP build and test",owner:"Andrew Yoblonski"}]},
+ req:{n:"Step 2 · Access",t:"Request a card",sys:["Ramp"],todo:true,
+    what:"The user requests a virtual or physical card with purpose, limit, and default coding. It routes through an approval workflow; on approval Ramp issues the card with limits and coding attached.",
+    steps:["Request: purpose, limit, coding","Approval workflow (to build)","Card issued with controls"],
+    pending:[{task:"Card-request approval workflow — approvers, thresholds, auto-approve vs. sign-off",owner:"T&E"},
+             {task:"Spend programs — multiple programs & auto GL mapping if applicable",owner:"T&E / Accounting / Strat Fin"}]},
+ spend:{n:"Step 3 · Spend",t:"Spend on the card",sys:["Ramp","Card network","Merchant"],
+    what:"The cardholder pays a merchant. The charge is checked against the card's limits and policy in real time, then approved or declined at checkout.",
+    steps:["Purchase at merchant","Real-time authorization","Approve or decline"],
+    pending:[{task:"Rules for card blocking, decline & soft warnings by policy and spend program",owner:"T&E"}]},
+ txn:{n:"Step 4 · Spend",t:"Transaction hits Ramp",sys:["Ramp"],
+    what:"The settled charge posts in Ramp. The cardholder adds a receipt and memo; Ramp auto-categorizes and validates against policy before the item advances to review.",
+    steps:["Settle & post in Ramp","Receipt + memo captured","Policy & data validation"],
+    pending:[{task:"Map Workday GL fields to Ramp expense items",owner:""},
+             {task:"Test Ramp auto-coding",owner:""}]},
+ review:{n:"Step 5 · Review",t:"Review & approve",sys:["Ramp"],
+    note:"Ramp AI screens every transaction — including auto-posted ones — so personal or bad charges are caught here and forked to an exception path.",
+    what:"Ramp AI auto-approves low-risk, in-policy spend and escalates the rest by category and amount (Manager → T&E → Accounting, plus Compliance / HR Immigration). Full matrix below.",
+    links:[{text:"Proposed approval policy (Google Sheets)",url:POLICY_URL}],
+    steps:["Ramp AI first pass / auto-approve","Escalate by category & amount","Approve, or fork to exception"],
+    policy:policy,
+    pending:[{task:"Obtain sign-off on approval policy",owner:"Audit / T&E"}]},
+ pers:{n:"Exception · caught in review",t:"Personal expense",sys:["Ramp","Workday Financials"],
+    note:"Never posts to Workday expense accounts — resolved personal charges net to zero in the Ramp clearing account.",
+    what:"If a charge is identified as personal (often by Ramp AI, even after auto-posting), Ramp flags it and the employee must repay the company before it can resolve.",
+    links:[{text:"Detailed accounting flow & scenarios",url:ACCT_URL}],
+    steps:["Flag personal & hold in Ramp","Employee repays (ACH or check)","T&E confirms repayment","Nets to zero in clearing"],
+    pending:[{task:"Design & sign off on accounting treatment and WD integration",owner:"Accounting + FSS"}]},
+ disp:{n:"Exception · caught in review",t:"Dispute",sys:["Ramp","Card network","Merchant"],
+    what:"Unauthorized, duplicate, or incorrect charges are disputed with the card network. The amount is held out of the payable until settled; resolved items rejoin the flow for coding and sync.",
+    links:[{text:"Detailed accounting flow & scenarios",url:ACCT_URL}],
+    steps:["File dispute with network","Provisional credit","Chargeback or reversal"],
+    pending:[{task:"Design & sign off on accounting treatment and WD integration",owner:"Accounting + FSS"}]},
+ sync:{n:"Step 6 · Settle & record",t:"Sync to Workday",sys:["Ramp","Workday Financials"],
+    note:"Sync is gated on approval. Settlements post Dr clearing / Cr cash; the approval-triggered sync posts Dr expense / Cr clearing.",
+    what:"Only approved transactions sync. Each clears accounting validation and a month-end cutoff check, then posts to Workday as journal entries.",
+    links:[{text:"Detailed accounting flow & scenarios",url:ACCT_URL}],
+    steps:["Accounting validation (GL, cost center, worktags)","Month-end cutoff check (open period)","ERP sync — posts payable / expense"],
+    pending:[{task:"Design & sign off on accounting treatment and WD integration",owner:"Accounting + FSS"}]},
+ pay:{n:"Step 7 · Settle & record",t:"Company pays Ramp",sys:["Ramp","Corporate bank"],
+    what:"On the billing cycle Ramp bills the company and pulls payment by ACH from the corporate bank account, settling the card liability.",
+    steps:["Statement issued","ACH autopay from corporate bank","Payment cleared","First-notice rule"],
+    pending:[{task:"Sign off on process",owner:"T&E, AP, Treasury & Accounting"}]},
+ fin:{n:"Step 8 · Settle & record",t:"Finalize & reconcile",sys:["Workday Financials","Ramp"],
+    what:"After sync the entry is final. Coding is locked, and at each close accounting reconciles the Ramp clearing account so its balance reflects only unresolved items.",
+    steps:["Lock coding (no in-place edits)","Reverse-and-repost for changes","Reconcile clearing at close"],
+    pending:[{task:"Sign off on process",owner:"T&E, FSS & Accounting"}]}
 };
 
-// Each category: ordered tiers with an exclusive upper bound and the approver chain.
-const POLICY = {
-  airline:{name:"Travel — Airline spend", tiers:[
-    {max:5000, label:"Under $5K", chain:["ramp"]},
-    {max:10000, label:"$5K – $10K", chain:["ramp","mgr"]},
-    {max:15000, label:"$10K – $15K", chain:["ramp","mgr","te"]},
-    {max:Infinity, label:"Over $15K", chain:["ramp","mgr","te","acct"]}
-  ]},
-  nonair:{name:"Travel — Non-airline travel", tiers:[
-    {max:1000, label:"Under $1K", chain:["ramp"]},
-    {max:5000, label:"$1K – $5K", chain:["ramp","mgr"]},
-    {max:10000, label:"$5K – $10K", chain:["ramp","mgr","te"]},
-    {max:Infinity, label:"Over $10K", chain:["ramp","mgr","te","acct"]}
-  ]},
-  software:{name:"Non-travel — Software", tiers:[
-    {max:1000, label:"$0 – $1K", chain:["ramp","mgr"]},
-    {max:5000, label:"$1K – $5K", chain:["ramp","mgr","te"]},
-    {max:Infinity, label:"Over $5K", chain:["ramp","mgr","te","acct"]}
-  ]},
-  opex:{name:"Non-travel — Opex cards", tiers:[
-    {max:10000, label:"$0 – $10K", chain:["ramp","mgr"]},
-    {max:25000, label:"$10K – $25K", chain:["ramp","mgr","te"]},
-    {max:Infinity, label:"Over $25K", chain:["ramp","mgr","te","acct"]}
-  ]},
-  other:{name:"Non-travel — All other spend", tiers:[
-    {max:1000, label:"$0 – $1K", chain:["ramp"]},
-    {max:5000, label:"$1K – $5K", chain:["ramp","mgr"]},
-    {max:10000, label:"$5K – $10K", chain:["ramp","mgr","te"]},
-    {max:Infinity, label:"Over $10K", chain:["ramp","mgr","te","acct"]}
-  ]},
-  charity:{name:"Non-travel — Charitable contributions", tiers:[
-    {max:500, label:"$0 – $500", chain:["ramp"]},
-    {max:5000, label:"$500 – $5K", chain:["ramp","mgr","comp"]},
-    {max:10000, label:"$5K – $10K", chain:["ramp","mgr","comp","tea"]},
-    {max:Infinity, label:"Over $10K", chain:["ramp","mgr","comp","tea","acct"]}
-  ]},
-  immigration:{name:"Non-travel — Immigration / Visa", tiers:[
-    {max:500, label:"$0 – $500", chain:["ramp"]},
-    {max:5000, label:"$500 – $5K", chain:["ramp","mgr","hr"]},
-    {max:10000, label:"$5K – $10K", chain:["ramp","mgr","hr","tea"]},
-    {max:Infinity, label:"Over $10K", chain:["ramp","mgr","hr","tea","acct"]}
-  ]}
-};
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 
-function findTier(cat, amount){
-  const tiers = POLICY[cat].tiers;
-  for(const t of tiers){ if(amount < t.max) return t; }
-  return tiers[tiers.length-1];
+function policyTable(rows){
+ let prev=null;
+ const body=rows.map(r=>{
+   const isNew=r.c!==prev; prev=r.c;
+   const tb=isNew?"border-top:1px solid var(--line);":"";
+   const cat=isNew?esc(r.c):"";
+   return `<tr><td class="cat" style="${tb}">${cat}</td><td style="${tb}color:var(--muted)">${esc(r.t)}</td><td style="${tb}">${esc(r.a)}</td></tr>`;
+ }).join('');
+ return `<div class="ptitle">Proposed approval matrix</div>
+  <table class="policy"><thead><tr><th style="width:30%">Category</th><th style="width:20%">Threshold</th><th style="width:50%">Approval chain</th></tr></thead>
+  <tbody>${body}</tbody></table>`;
 }
 
-function chainHTML(chain, mini){
-  let html = '<div class="chain">';
-  chain.forEach((r,i)=>{
-    const role = ROLES[r];
-    html += '<div class="step">';
-    html += `<div class="node ${role.cls} ${mini?'mini-node':''}">${role.label}`+
-            (mini?'':`<small>${role.sub}</small>`)+`</div>`;
-    if(i < chain.length-1) html += '<div class="arrow"></div>';
-    html += '</div>';
-  });
-  html += '</div>';
-  return html;
+function pick(id){
+ const p=pos[id], s=document.getElementById('sel');
+ s.setAttribute('x',p.x-3); s.setAttribute('y',p.y-3);
+ s.setAttribute('width',p.w+6); s.setAttribute('height',62);
+ const d=data[id];
+ const chips=d.sys.map(x=>`<span class="chip">${esc(x)}</span>`).join('');
+ const todo=d.todo?`<div class="callout warn"><b>To build:</b> the card-request approval workflow — approvers, thresholds, policy rules, and what auto-approves vs. needs sign-off.</div>`:"";
+ const note=d.note?`<div class="callout info">${esc(d.note)}</div>`:"";
+ const links=(d.links&&d.links.length)?`<div class="links">${d.links.map(l=>`<a class="btnlink" href="${l.url}" target="_blank" rel="noopener">${esc(l.text)} ↗</a>`).join('')}</div>`:"";
+ const stepsHtml=`<div class="steplbl">Steps</div><ol class="steps">${d.steps.map(li=>`<li>${esc(li)}</li>`).join('')}</ol>`;
+ const tbl=d.policy?policyTable(d.policy):"";
+ const pend=d.pending?`<div class="pending"><h4>Pending build / design activities</h4><ul>${d.pending.map(pp=>`<li>${esc(pp.task)}${pp.owner?` <span class="owner">— ${esc(pp.owner)}</span>`:""}</li>`).join('')}</ul></div>`:"";
+ document.getElementById('detail').innerHTML=`
+  <div class="card">
+    <h2>${esc(d.n)}</h2>
+    <h3>${esc(d.t)}</h3>
+    ${note}${todo}${links}
+    <p class="lead">${esc(d.what)}</p>
+    ${stepsHtml}${tbl}
+    <div class="syswrap"><div class="lbl">Systems</div>${chips}</div>
+    ${pend}
+  </div>`;
 }
-
-function render(){
-  const cat = document.getElementById('cat').value;
-  const amtRaw = document.getElementById('amt').value;
-  const out = document.getElementById('result');
-  if(!cat || amtRaw === ''){
-    out.innerHTML = '<span class="placeholder">Your approval chain will appear here.</span>';
-    return;
-  }
-  const amt = parseFloat(amtRaw);
-  if(isNaN(amt) || amt < 0){
-    out.innerHTML = '<span class="placeholder">Enter a valid amount.</span>';
-    return;
-  }
-  const tier = findTier(cat, amt);
-  const count = tier.chain.length;
-  let html = `<div class="tier-pill">${POLICY[cat].name} · ${tier.label} · `+
-             `${count} approver${count>1?'s':''}</div>`;
-  html += chainHTML(tier.chain, false);
-  html += '<div class="note-box">Ramp AI may still escalate to a manager if it is unsure of the '+
-          'expense or flags it for human review, even within this tier.</div>';
-  out.innerHTML = html;
-}
-
-document.getElementById('cat').addEventListener('change', render);
-document.getElementById('amt').addEventListener('input', render);
-
-const charts = document.getElementById('charts');
-Object.keys(POLICY).forEach((key, idx)=>{
-  const c = POLICY[key];
-  const block = document.createElement('div');
-  block.className = 'cat-block' + (idx===0?' open':'');
-  let rows = '';
-  c.tiers.forEach(t=>{
-    rows += `<div class="row"><div class="thr">${t.label}</div>${chainHTML(t.chain, true)}</div>`;
-  });
-  block.innerHTML =
-    `<div class="cat-head"><h3>${c.name}</h3>`+
-    `<span class="tag">${c.tiers.length} tiers <span class="chev">▶</span></span></div>`+
-    `<div class="cat-body">${rows}</div>`;
-  block.querySelector('.cat-head').addEventListener('click', ()=>block.classList.toggle('open'));
-  charts.appendChild(block);
-});
-
-document.getElementById('auditChain').innerHTML = chainHTML(["te","acct","audit"], true);
+pick('sign');
 </script>
 </body>
 </html>
